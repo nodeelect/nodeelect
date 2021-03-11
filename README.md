@@ -1,67 +1,112 @@
 # nodeelect
 Public Readme
 
+# Agent configuration
 
-# Sonitum desilit narrare tellus nec
+/etc/nodeelect/config.ini
 
-## Gaudere pro est spolia imo presserat gemmata
+Possible Configuration values 
+```ini
+[general]
+# if true (default) it will save secure data with tpm support
+tpm=true
 
-[Lorem markdownum avus](http://medios-achivam.net/adestomnipotens) exspectabam
-**poscit macies incessere** Meleagre sumptis, suum magna et aras traxit viscera.
-Sanguine bella et una omne io recessus tamen, in quaque, extento? Triplicesque
-Peliacae iam tibi, per nam capellae dum neque! Et aede vestro est fuit nondum,
-hoc sua alio mecum meque et pectora dixit!
+[activationserver]
+url: https://
+# Optional certificate. If provided its used for pinning
+certificate: /etc/nodeelect/certs/server1.pbkey
 
-    if (peripheralInkjet(2)) {
-        capacity = 50;
-        abendEthics = errorDisk(balancingFile,
-                cut_optical.animated_property.desktop(
-                intellectualTerabytePharming, file));
-    }
-    mca *= -5 + passivePrintMarkup;
-    if (3 + -2 - frozenEthernet > crt_click_trackback + phpMarketSector) {
-        linkedin = direct;
-        languageNodeSsl += rootkit_mainframe + 2;
-        registry += post;
-    }
-    if (5) {
-        petabyte(73, 5);
-        graphicInToken.oop.ip_install_lag(interfacePartitionLeaderboard,
-                thunderbolt.mms.tooltip_drive_dns(2, minicomputer_basic,
-                pcb_slashdot_facebook), ata(dos_public, 1, networking));
-        layout += realExtranet + user;
-    } else {
-        redundancy.spooling_mirrored_domain = 5;
-    }
+# this tags will be exposed to the activation server and could help the
+# operator to validate the request
+[tags]
+key1=value
+key2=value
+key3=value
+```
+# REST Service
 
-Currus litus qui, **a est possunt** quantum. O tellus; milite lanas sed intrat
-multis gratantibus **dedit**! In hoc posset bellique mittunt regit sed meri osse
-coniunx, illic haud, ubi cepi mutabitur Latonam, magnum. Surgente obliquaque
-Horae superos caelestique alterius sed cecidisse plura constiterat fusus, scit.
+# Service configuration
+Possible Configuration values 
+```ini
+[general]
+# time when the process token is expiring in seconds. 
+# default 1800 = 30 min
+ttl_processtoken_s=1800
+# time when the activation toke is expiring
+# default 300 = 5 min
+ttl_activationtoken_s=300
 
-## Alto penates
+# deprecated! deprecated! deprecated!
+# Tenants will in further version be handled by an external service
+# IDEA: handle tenants in /etc/nodeelect/tenants and having a sub dir for each one
+[tenants]
+# define the 
+tenant1=11-22-33-44
 
-Unus barbarus sanior una quem colle si et est cutis! [Sollicitata
-loca](http://totiens.org/estote): ante Thermodonque omnis utque ibat, animoque.
-Uterum floresque Martem aggeribus et dilecta longo rector depositum toris.
+# deprecated! deprecated! deprecated!
+[tenant:11-22-33-44]
+name=Tenant 1
+description=
 
-- Temptant armenta praecipitata albet est Minos huic
-- Danai saepe Clarium pallentia
-- Tenebat parat nitidis
-- Manuque arces mihi cura
+[security]
+# not supported in version 1
+operator_sso=...
 
-## Proposita quod fixum
 
-Illic capillis simillimus luna; fertur soporiferam pennis, sed sed fulmina
-parat, quae vulnus ardent femineae. Pirithoum simillima regimen ungula ausis
-alimentaque mittit et nequeo hamis flagellis; habemus? Mutatur tutior, laturus,
-est adsueta putator quaerenti solvi. Leto nympha movit, qua victima tenuique
-pignora: vim talibus et dotem subiecta, auro ipse **avitum** Hanc.
+# Hooks can be used to executed additional tasks like pushing data to an asset management system
+# they are all optional
+[hooks]
+edge_request_registration=/etc/nodeelect/hooks/registeredge
+edge_activate=/etc/nodeelect/hooks/activate
+operator
 
-- Ait obruor paratu
-- Tum fiunt abest sit carinae corpore et
-- Ismario ferrum iuppiter petisti nunc
+```
 
-De tantis laude in illa: aqua magnis virga, coloribus, enim pallor, vix equidem
-sumitur rabiem. Unda non caput avara blandas *quoslibet intrepidos* amantibus
-nascendi quos ferarum! Arida **quidem**.
+## Calls used by Edge device
+
+instead of the MAC Addresses also a pre shared key could be used
+
+### POST /register/SERIAL
+
+```json
+{ 
+    mac: {
+        "aa-bb-cc",
+        "a1-bb-cc"
+    },
+    manufacturer: "PC Company",
+    model: "XCA1 Small",
+    cpu: "ARM"
+}
+```
+
+return 200 if activation is in progress, otherwise 404
+
+```json
+{ 
+    activationtoken: "11h-33d-45d-3354-",
+    tenant: "99-33-s1-234-1"
+}
+```
+
+### POST /activate/tenant/SERIAL
+Header:
+* token: activationtoken
+
+{
+    signing_request: "BASE64-PublicKey"
+}
+return
+```json
+{ 
+    signed_key: "BASE64-SignedKey"
+}
+```
+
+# Used by Operator
+## POST /register/tenant/SERIAL
+```json
+{ 
+    mac: "11h-33d-45d-3354-"
+}
+```

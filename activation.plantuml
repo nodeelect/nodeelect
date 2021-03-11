@@ -1,0 +1,89 @@
+@startuml
+actor "Tenant Administrator" as tenant
+entity Edge as edge
+control "Registration Server" as reg
+database "MongoDB" as db
+entity "Operator Certificate Authority" as cao
+entity "Tenant Certificate Authority" as cat
+
+edge->reg: register (serial, mac, meta data)
+    note right: metadata is device manufacturer, model number etc.
+    reg -> db: check for activation order
+    db --> reg: not found
+    reg ->o db: store registration request
+reg -> edge: 404
+
+... "every 2 minutes" ...
+edge->reg: register (serial, mac, meta data)
+    reg ->o db: update "last seen"
+reg ->edge: 404
+... "until profile is assigned" ...
+
+tenant -> reg: assign profile (serial, mac, tenant)
+reg -> db: is edge in register mode and last seen <30 min
+return available data
+
+reg->reg: create process token (ttl 30min)
+note right
+    The Process token is then used in the following 
+    https requests headers of the tenant administrator
+end note
+reg->tenant: 200 (request activation) + edge metadata
+tenant->tenant: validate metadata
+note right
+    Validation could be done by comparing visible serial number an ddevice type
+    or by checking "last seen". It could also be one of teh configured
+    tags of the nodeleect agent
+end note
+tenant->reg: place activation order for edge with (JSON) profile to be assigned
+    reg->db: store profile for edge, validity 30 min
+    reg->tenant: ok. waiting for edge
+
+group loop
+    tenant->reg: check status
+    return status (activated or waiting for edge)
+end
+
+edge->reg: register (serial, mac, signing request) 
+note right: same as first call
+    reg -> db: check for activation order
+    db -> reg: activation order found
+    reg ->o db: mark activation as started
+    note right: all started activations without prove \nwill be automatically revoked by cron job
+    db --> reg: found, return profile
+    group existing assignment revocation
+        reg -> db: check for older activation
+        db -> reg: found, signed cert(s)
+        reg ->o cao: revoke old certificate
+        reg ->o cat: revoke old certificate
+    end
+    group assignment preparation
+        reg -> cao: request signing
+        cao -> reg: signed certificate for operator
+        reg -> cat: request signing
+        cat -> reg: signed certificate for tenant
+        reg ->o db: store new assignment 
+        reg ->o db: store new assignment
+        reg -> reg: create activation token ttl 300 sec
+    end    
+reg -> edge: profile + certificates + activation token
+
+group assignmemnt validation
+    edge -> reg: send signed activation token for Operator CA and Tenant CA
+    note right: POST /activate/TENANT/SERIAL/validation
+    reg -> reg: validates signature activation token signature
+    reg -> db: mark registration as done
+    reg -> edge: end process
+end 
+
+... "somewhen later or after an factory reset" ...
+
+edge->reg: register
+    reg -> db: check for activation order
+    db --> reg: not found
+    note right: because process was marked as done
+    reg ->o db: store registration request
+reg -> edge: 200
+... "process will start from beginning" ...
+
+@enduml

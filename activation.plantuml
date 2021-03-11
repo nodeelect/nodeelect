@@ -1,4 +1,4 @@
-@startuml
+@startuml Activation
 actor "Tenant Administrator" as tenant
 entity Edge as edge
 control "Registration Server" as reg

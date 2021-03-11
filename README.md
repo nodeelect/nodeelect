@@ -36,17 +36,19 @@ ttl_processtoken_s=1800
 # default 300 = 5 min
 ttl_activationtoken_s=300
 
-# deprecated! deprecated! deprecated!
-# Tenants will in further version be handled by an external service
-# IDEA: handle tenants in /etc/nodeelect/tenants and having a sub dir for each one
-[tenants]
-# define the 
-tenant1=11-22-33-44
+# Tenants defined in /etc/nodeelect/tenants as sub dir for each
+# ./defaults --> default set of properties assigned to each device,
+#                e.g. service URLs
+# ./ca/      --> EasyRSA based CA
+operator=/etc/nodeelect/operator/
 
-# deprecated! deprecated! deprecated!
-[tenant:11-22-33-44]
-name=Tenant 1
-description=
+# Tenants defined in /etc/nodeelect/tenants as sub dir for each
+# tenants/t1/config   --> tenant configuration file with name etc.
+# tenants/t1/passwd   --> tenant admin user authentication
+# tenants/t1/defaults --> default set of properties assigned to each device,
+#                         e.g. service URLs
+# tenants/t1/ca/      --> EasyRSA based CA
+tenants=/etc/nodeelect/tenants/
 
 [security]
 # not supported in version 1
@@ -61,6 +63,21 @@ edge_activate=/etc/nodeelect/hooks/activate
 operator
 
 ```
+
+# under development
+
+* security: none
+    * /device/SERIAL/register
+* security: cert + activation token
+    * /device/SERIAL/register/TENANTID/activate --> validate cert
+* security: cert
+    * /device/SERIAL/register/TENANTID/deactivate  --> revoke cert (called by edge at factory reset)
+    * /device/SERIAL/status
+
+* security: user / pwd
+    * /tenant/TENANTID/register/SERIAL/MAC  --> allow registration
+    * /tenant/TENANTID/assign/SERIAL/MAC    --> allow registration
+    * /tenant/TENANTID/revoke/SERIAL        --> revoke all certificates
 
 ## Calls used by Edge device
 
